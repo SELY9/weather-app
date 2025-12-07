@@ -26,6 +26,7 @@ async function checkWeather(city) {
     }
 
     const data = await response.json();
+    console.log("Weather API data:", data);
 
     cityEl.textContent = data.name;
     tempEl.textContent = Math.round(data.main.temp) + "°C";
@@ -40,36 +41,50 @@ async function checkWeather(city) {
     else if (main.includes("mist")) weatherIcon.src = "images/mist.png";
     else weatherIcon.src = "images/clear.png";
 }
-async function fetchCitySuggestions(query){
-    if (query.length <2){
-        suggestionsBox.style.display ="none";
+async function fetchCitySuggestions(query) {
+    if (query.length < 2) {
+        suggestionsBox.style.display = "none";
         return;
     }
+
     const url = `https://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=5&appid=${apikey}`;
-    const res = await fetch (url);
+    const res = await fetch(url);
     const data = await res.json();
 
     suggestionsBox.innerHTML = "";
-    if (data.length ===0){
-        suggestionsBox.style.display= "none";
+
+    if (data.length === 0) {
+        suggestionsBox.style.display = "none";
         return;
     }
-    data.forEach(city => {
+
+    // REMOVE DUPLICATES HERE (correct location)
+    const uniqueCities = [];
+    const filteredData = data.filter(c => {
+        const key = `${c.name}-${c.country}`;
+        if (uniqueCities.includes(key)) return false;
+        uniqueCities.push(key);
+        return true;
+    });
+
+    // SHOW CLEANED RESULTS
+    filteredData.forEach(city => {
         const item = document.createElement("div");
         item.classList.add("suggestion-item");
         item.textContent = `${city.name}, ${city.country}`;
 
-
         item.addEventListener("click", () => {
             searchInput.value = city.name;
-            suggestionsBox.style.display ="none"
+            suggestionsBox.style.display = "none";
             checkWeather(city.name);
         });
+
         suggestionsBox.appendChild(item);
-        
     });
-    suggestionsBox.style.display="block";
+
+    suggestionsBox.style.display = "block";
 }
+
 searchBtn.addEventListener("click", () => {
     checkWeather(searchInput.value.trim());
 });
