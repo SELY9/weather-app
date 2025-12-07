@@ -3,7 +3,7 @@ const apiUrl = "https://api.openweathermap.org/data/2.5/weather?units=metric&q="
 
 const searchInput = document.querySelector(".search input");
 const searchBtn = document.querySelector(".search button");
-
+const suggestionsBox = document.querySelector(".suggestions")
 const cityEl = document.querySelector(".city");
 const tempEl = document.querySelector(".temp");
 const humidityEl = document.querySelector(".humidity");
@@ -40,11 +40,57 @@ async function checkWeather(city) {
     else if (main.includes("mist")) weatherIcon.src = "images/mist.png";
     else weatherIcon.src = "images/clear.png";
 }
+async function fetchCitySuggestions(query){
+    if (query.length <2){
+        suggestionsBox.style.display ="none";
+        return;
+    }
+    const url = `https://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=5&appid=${apikey}`;
+    const res = await fetch (url);
+    const data = await res.json();
 
+    suggestionsBox.innerHTML = "";
+    if (data.length ===0){
+        suggestionsBox.style.display= "none";
+        return;
+    }
+    data.forEach(city => {
+        const item = document.createElement("div");
+        item.classList.add("suggestion-item");
+        item.textContent = `${city.name}, ${city.country}`;
+
+
+        item.addEventListener("click", () => {
+            searchInput.value = city.name;
+            suggestionsBox.style.display ="none"
+            checkWeather(city.name);
+        });
+        suggestionsBox.appendChild(item);
+        
+    });
+    suggestionsBox.style.display="block";
+}
 searchBtn.addEventListener("click", () => {
     checkWeather(searchInput.value.trim());
 });
 
 searchInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") checkWeather(searchInput.value.trim());
+    if (e.key === "Enter") {
+        // On Enter, just check the weather directly using whatever is typed.
+        checkWeather(searchInput.value.trim());
+        // Optionally hide the suggestions once Enter is pressed
+        suggestionsBox.style.display = "none";
+    }
 });
+searchInput.addEventListener("input", () => {
+    fetchCitySuggestions(searchInput.value.trim());
+});
+
+document.addEventListener("click", (e) => {
+    if (!e.target.closest(".search")) {
+        suggestionsBox.style.display = "none";
+    }
+});
+
+
+
