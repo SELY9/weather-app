@@ -111,3 +111,22 @@ body {
 .suggestion-item:hover {
     background: rgba(255,255,255,0.25);
 }
+
+.loc-btn {
+    width: 50px;
+    height: 50px;
+    border: none;
+    background: #fff;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 22px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #333;
+    transition: 0.2s;
+}
+
+.loc-btn:hover {
+    background: #e6e6e6;
+}

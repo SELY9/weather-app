@@ -9,6 +9,7 @@ const tempEl = document.querySelector(".temp");
 const humidityEl = document.querySelector(".humidity");
 const windEl = document.querySelector(".wind");
 const weatherIcon = document.querySelector(".weather-icon");
+const locBtn = document.querySelector(".loc-btn");
 
 async function checkWeather(city) {
 
@@ -41,8 +42,19 @@ async function checkWeather(city) {
     else if (main.includes("mist")) weatherIcon.src = "images/mist.png";
     else weatherIcon.src = "images/clear.png";
 }
+async function getCityFromCoords(lat, lon){
+    const url = `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${apikey}`;
+    const res = await fetch (url);
+    const data = await res.json ();
+
+    if (data.length > 0){
+        return data[0].name;
+    }else{
+        return null;
+    }
+}
 async function fetchCitySuggestions(query) {
-    if (query.length < 2) {
+    if (query.length < 3) {
         suggestionsBox.style.display = "none";
         return;
     }
@@ -73,11 +85,19 @@ async function fetchCitySuggestions(query) {
         item.classList.add("suggestion-item");
         item.textContent = `${city.name}, ${city.country}`;
 
-        item.addEventListener("click", () => {
-            searchInput.value = city.name;
-            suggestionsBox.style.display = "none";
-            checkWeather(city.name);
-        });
+       item.addEventListener("click", () => {
+
+    // Build full city name (handles "New York", "Los Angeles")
+    let fullName = city.name;
+    if (city.state) {
+        fullName = `${city.name} ${city.state}`;
+    }
+
+    searchInput.value = fullName;
+    suggestionsBox.style.display = "none";
+    checkWeather(fullName);
+});
+
 
         suggestionsBox.appendChild(item);
     });
@@ -107,5 +127,45 @@ document.addEventListener("click", (e) => {
     }
 });
 
+navigator.geolocation.getCurrentPosition(async(position) =>{
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
 
+    const city =await getCityFromCoords (lat, lon);
+
+    if (city){
+        searchInput.value = city ;
+        checkWeather(city);
+    }else{
+        cityEl.textContent ="Location not found";
+    }
+});
+
+
+locBtn.addEventListener("click", () => {
+    console.log("Location button clicked"); // test
+
+    navigator.geolocation.getCurrentPosition(async (position) => {
+
+        console.log("Geolocation allowed"); // test
+
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        const city = await getCityFromCoords(lat, lon);
+
+        console.log("City from coords:", city); // test
+
+        if (city) {
+            searchInput.value = city;
+            checkWeather(city);
+        } else {
+            cityEl.textContent = "Location not found";
+        }
+    },
+    (error) => {
+        console.log("Geolocation error:", error); 
+        alert("Please allow location access for this to work.");
+    });
+});
 
