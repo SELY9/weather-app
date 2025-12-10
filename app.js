@@ -12,36 +12,66 @@ const weatherIcon = document.querySelector(".weather-icon");
 const locBtn = document.querySelector(".loc-btn");
 
 async function checkWeather(city) {
-
     if (!city) return;
 
+    // Try fetching weather for the given city
     const response = await fetch(apiUrl + city + `&appid=${apikey}`);
 
     if (response.status === 404) {
         cityEl.textContent = "City not found";
-        tempEl.textContent = "--°C";
-        humidityEl.textContent = "--%";
-        windEl.textContent = "-- km/h";
-        weatherIcon.src = "images/clear.png";
-        return;
+
+        // Get coordinates of the typed city for reverse geocoding
+        const geoResponse = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apikey}`);
+        const geoData = await geoResponse.json();
+
+        if (geoData.length === 0) {
+            // If city doesn't exist anywhere, just stop here
+            tempEl.textContent = "--°C";
+            humidityEl.textContent = "--%";
+            windEl.textContent = "-- km/h";
+            weatherIcon.src = "images/clear.png";
+            return;
+        }
+
+        const { lat, lon } = geoData[0];
+
+        // Now fetch the weather for the nearest city based on lat/lon
+        const nearestWeatherResponse = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apikey}`);
+        const nearestWeatherData = await nearestWeatherResponse.json();
+
+        if (nearestWeatherData) {
+            cityEl.textContent = nearestWeatherData.name;
+            tempEl.textContent = Math.round(nearestWeatherData.main.temp) + "°C";
+            humidityEl.textContent = nearestWeatherData.main.humidity + "%";
+            windEl.textContent = nearestWeatherData.wind.speed + " km/h";
+
+            const main = nearestWeatherData.weather[0].main.toLowerCase();
+            if (main.includes("cloud")) weatherIcon.src = "images/clouds.png";
+            else if (main.includes("rain")) weatherIcon.src = "images/rain.png";
+            else if (main.includes("drizzle")) weatherIcon.src = "images/drizzle.png";
+            else if (main.includes("mist")) weatherIcon.src = "images/mist.png";
+            else weatherIcon.src = "images/clear.png";
+        }
+
+    } else {
+        // Continue with the normal weather check if the city is found
+        const data = await response.json();
+
+        cityEl.textContent = data.name;
+        tempEl.textContent = Math.round(data.main.temp) + "°C";
+        humidityEl.textContent = data.main.humidity + "%";
+        windEl.textContent = data.wind.speed + " km/h";
+
+        const main = data.weather[0].main.toLowerCase();
+
+        if (main.includes("cloud")) weatherIcon.src = "images/clouds.png";
+        else if (main.includes("rain")) weatherIcon.src = "images/rain.png";
+        else if (main.includes("drizzle")) weatherIcon.src = "images/drizzle.png";
+        else if (main.includes("mist")) weatherIcon.src = "images/mist.png";
+        else weatherIcon.src = "images/clear.png";
     }
-
-    const data = await response.json();
-    console.log("Weather API data:", data);
-
-    cityEl.textContent = data.name;
-    tempEl.textContent = Math.round(data.main.temp) + "°C";
-    humidityEl.textContent = data.main.humidity + "%";
-    windEl.textContent = data.wind.speed + " km/h";
-
-    const main = data.weather[0].main.toLowerCase();
-
-    if (main.includes("cloud")) weatherIcon.src = "images/clouds.png";
-    else if (main.includes("rain")) weatherIcon.src = "images/rain.png";
-    else if (main.includes("drizzle")) weatherIcon.src = "images/drizzle.png";
-    else if (main.includes("mist")) weatherIcon.src = "images/mist.png";
-    else weatherIcon.src = "images/clear.png";
 }
+
 async function getCityFromCoords(lat, lon){
     const url = `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${apikey}`;
     const res = await fetch (url);
