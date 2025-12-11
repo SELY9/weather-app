@@ -100,7 +100,7 @@ async function fetchCitySuggestions(query) {
         return;
     }
 
-    // REMOVE DUPLICATES HERE (correct location)
+    // REMOVE DUPLICATES
     const uniqueCities = [];
     const filteredData = data.filter(c => {
         const key = `${c.name}-${c.country}`;
@@ -109,31 +109,41 @@ async function fetchCitySuggestions(query) {
         return true;
     });
 
-    // SHOW CLEANED RESULTS
-    filteredData.forEach(city => {
+    // FILTER OUT REGION-LIKE NAMES (Administrative regions, not cities)
+    const validCities = filteredData.filter(city => {
+        // Skip if the city name includes region-like terms (i.e., Special Capital Region, Province, Autonomous)
+        const regionNames = ["Special Capital Region", "Province", "Autonomous Region"];
+        const isRegion = regionNames.some(region => city.name.includes(region));
+
+        // Valid city must not include these terms
+        const isValidCity = !isRegion && city.name.length > 1 && !city.state;
+
+        return isValidCity;
+    });
+
+    // SHOW CLEANED AND VALID RESULTS
+    validCities.forEach(city => {
         const item = document.createElement("div");
         item.classList.add("suggestion-item");
         item.textContent = `${city.name}, ${city.country}`;
 
-       item.addEventListener("click", () => {
+        item.addEventListener("click", () => {
+            let fullName = city.name;
+            if (city.state) {
+                fullName = `${city.name} ${city.state}`;
+            }
 
-    // Build full city name (handles "New York", "Los Angeles")
-    let fullName = city.name;
-    if (city.state) {
-        fullName = `${city.name} ${city.state}`;
-    }
-
-    searchInput.value = fullName;
-    suggestionsBox.style.display = "none";
-    checkWeather(fullName);
-});
-
+            searchInput.value = fullName;
+            suggestionsBox.style.display = "none";
+            checkWeather(fullName); // Fetch weather for the full city name
+        });
 
         suggestionsBox.appendChild(item);
     });
 
     suggestionsBox.style.display = "block";
 }
+
 
 searchBtn.addEventListener("click", () => {
     checkWeather(searchInput.value.trim());
