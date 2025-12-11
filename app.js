@@ -93,6 +93,8 @@ async function fetchCitySuggestions(query) {
     const res = await fetch(url);
     const data = await res.json();
 
+    console.log(data);  // Log the raw API response to check the returned data
+
     suggestionsBox.innerHTML = "";
 
     if (data.length === 0) {
@@ -100,7 +102,7 @@ async function fetchCitySuggestions(query) {
         return;
     }
 
-    // REMOVE DUPLICATES
+    // REMOVE DUPLICATES HERE
     const uniqueCities = [];
     const filteredData = data.filter(c => {
         const key = `${c.name}-${c.country}`;
@@ -109,17 +111,15 @@ async function fetchCitySuggestions(query) {
         return true;
     });
 
-    // FILTER OUT REGION-LIKE NAMES (Administrative regions, not cities)
+    // OPTIONAL: FILTER OUT REGION-LIKE NAMES (handle capital region and provinces)
     const validCities = filteredData.filter(city => {
-        // Skip if the city name includes region-like terms (i.e., Special Capital Region, Province, Autonomous)
         const regionNames = ["Special Capital Region", "Province", "Autonomous Region"];
         const isRegion = regionNames.some(region => city.name.includes(region));
-
-        // Valid city must not include these terms
-        const isValidCity = !isRegion && city.name.length > 1 && !city.state;
-
+        const isValidCity = !isRegion && city.name.length > 1 && city.state;
         return isValidCity;
     });
+
+    console.log(validCities);  // Log valid cities after filtering
 
     // SHOW CLEANED AND VALID RESULTS
     validCities.forEach(city => {
@@ -130,18 +130,18 @@ async function fetchCitySuggestions(query) {
         item.addEventListener("click", () => {
             let fullName = city.name;
             if (city.state) {
-                fullName = `${city.name} ${city.state}`;
+                fullName = `${city.name} ${city.state}`; // Handle state if available
             }
 
             searchInput.value = fullName;
             suggestionsBox.style.display = "none";
-            checkWeather(fullName); // Fetch weather for the full city name
+            checkWeather(fullName);  // Fetch weather for the city
         });
 
         suggestionsBox.appendChild(item);
     });
 
-    suggestionsBox.style.display = "block";
+    suggestionsBox.style.display = "block";  // Make sure suggestions box is displayed
 }
 
 
